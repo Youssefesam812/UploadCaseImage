@@ -1,0 +1,498 @@
+<div *ngIf="isLoading" class="spinner-overlay">
+  <span class="loader"></span>
+</div>
+
+
+<div class="container mt-5">
+  <div class="card p-5 shadow-sm">
+    <div class="header fw-semibold">
+      <a href="#" class="" style="color: #6C63FF; text-decoration: none;"
+        (click)="toggleHistory(); $event.preventDefault()">
+        <i class="pi pi-eye"></i> View history
+      </a>
+    </div>
+    <h3 class="mb-4">Case Image</h3>
+    <p>Add Case Image here</p>
+    <div class="row">
+      <div class="col-lg-6 col-md-12 mb-4">
+        <div
+          class="file-upload-section overflow-hidden p-0 text-center h-100 d-flex align-items-center justify-content-center"
+          [ngClass]="{'no-border': isSubmitted && uploadedFiles.length > 0}">
+          <div *ngIf="uploadedFiles.length === 0" (click)="openUploadDialog($event)" class="customPadding">
+            <div>
+              <i class="pi pi-upload" style="font-size: 3em; color: #333;"></i>
+              <p class="mt-3 mb-0">Drag & Drop image here or
+                <a href="#" style="color: #6C63FF; text-decoration: none;" (click)="openUploadDialog($event)">Upload
+                  Image</a>
+              </p>
+            </div>
+          </div>
+          <div *ngIf="isSubmitted && uploadedFiles.length > 0" class="w-100 position-relative">
+            <img [src]="selectedImage?.objectURL || uploadedFiles[0]?.objectURL"
+              class="w-100 costmoized-height rounded-4" alt="Uploaded Image">
+            <div class="position-absolute adjustPostion  mb-1 p-2 rounded-bottom-4">
+              <div class="d-flex flex-wrap justify-content-start">
+                <div *ngFor="let file of uploadedFiles; let i = index" class="position-relative m-2">
+                  <img [src]="file.objectURL" class="rounded-4" alt="Uploaded Thumbnail" [ngStyle]="{'width': '70px', 'height': '68px', 
+                                   'border': file === selectedImage ? '1px solid #6D5DDC' : 'none'}"
+                    (click)="SelectedImageFunction(file)">
+                  <i class="pi pi-times position-absolute top-0 end-0 custom-icon-colorr m-1" style="cursor: pointer;"
+                    (click)="removeImage(i)">
+                  </i>
+                </div>
+                <div *ngIf="uploadedFiles.length < 6">
+                  <div (click)="openUploadDialog($event)"
+                    class="opacity-75 rounded-4 mx-2 my-2 d-flex justify-content-center align-items-center cursor-pointer"
+                    style="width: 70px; height: 68px; border:1px dashed #6D5DDC; background: #F7F2FF;">
+                    <i class="pi pi-upload custom-icon-colorr-forUploadIcon " style="font-size: 1.2em;"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-5 col-md-12">
+        <!--Date Picker Part-->
+        <div style="position: relative; width: 120%; max-width: 120%; box-sizing: border-box; margin-bottom:25px">
+          <label for="date">Select Date</label>
+          <div style="width: 100%;">
+            <p-calendar [(ngModel)]="selectedDate" [iconDisplay]="'input'" [showIcon]="true" inputId="icondisplay"
+              dateFormat="dd-mm-yy" [style]="{'width':'100%'}" [disabled]="true">
+            </p-calendar>
+          </div>
+        </div>
+        <!--Body Part-->
+        <div style="position: relative; width: 120%; max-width: 120%; box-sizing: border-box;" (click)="openModal()">
+          <label for="name">Anatomy</label>
+          <input type="text" id="name" class="form-control" placeholder="Name" [(ngModel)]="name" readonly
+            style="width: 100%; padding-right: 70px; height: 50px; box-sizing: border-box; border-radius: 5px; border: 1px solid #ccc; font-size: 17px; cursor: pointer;">
+          <div
+            style="position: absolute; right: 10px; top: 65%; transform: translateY(-50%); color: #007bff; cursor: pointer; font-size: 14px;"
+            (click)="openModal()">
+            {{ getSelectionText() }}
+          </div>
+        </div>
+
+        <div class="form-group mt-4" style="position: relative; width: 100%;">
+          <label for="notes">Doctor's Notes</label>
+          <textarea id="notes" class="form-control" rows="8" [(ngModel)]="doctorNotes"
+            style="width: 120%;  box-sizing: border-box;" placeholder="Note"></textarea>
+        </div>
+        <button class="btn text-white bottonBackGround w-100 mt-4 rounded-pill py-2"
+          (click)="PostPatientCaseFunctionFromService()">
+          Add New Case
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div *ngIf="isModalOpen" class="modal-overlay">
+  <div class="modal-content">
+    <button class="close-button" (click)="closeModal()">&times;</button>
+    <h3><b>Upload case image</b></h3>
+    <div class="grid-container">
+      <div class="grid-item" *ngFor="let part of bodyParts" (click)="selectBodyPart(part)"
+        [class.selected]="selectedPart === part">
+        <div class="selection-circle" [class.selected]="selectedPart === part">
+          <i class="pi pi-check" *ngIf="selectedPart === part"></i>
+        </div>
+        <img [src]="'http://ec2-34-250-251-119.eu-west-1.compute.amazonaws.com/' + part.imagePath"
+          alt="{{ part.name }}">
+        <p>#{{ part.name }}</p>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline-secondary" (click)="closeModal()" style="font-size: 10px;">Cancel</button>
+      <button class="btn btn-primary" [disabled]="!selectedPart" (click)="submitSelection()"
+        style="font-size: 10px;">Submit</button>
+    </div>
+  </div>
+</div>
+<p-dialog header="Upload Case Image" [modal]="true" [(visible)]="visible" [style]="{ 
+    width: '400px', 
+    height: '360px', 
+    'border-radius': '15px' 
+  }">
+  <div class="d-flex flex-column gap-3 mb-4 mt-4 align-items-center" style="width: 100%;">
+
+    <p-button label="Via Camera" (click)="openCameraDialog()" class="p-button-rounded" [style]="{
+      'background-color': '#F9F8F8', 
+      'border-color': '#F9F8F8', 
+      'color': '#0A0A0A', 
+      'border-radius': '15px', 
+      'width': '320px', 
+      'height': '80px' 
+    }">
+      <ng-template pTemplate="icon">
+        <i class="pi pi-camera custom-icon-color"></i>
+      </ng-template>
+    </p-button>
+
+
+    <p-button label="From Device" (click)="openFileUploadDialog()" class="p-button-rounded" [style]="{ 
+        'background-color': '#F9F8F8', 
+        'border-color': '#F9F8F8', 
+        'color': '#0A0A0A', 
+        'border-radius': '15px', 
+        'width': '320px', 
+        'height': '80px' 
+      }">
+      <ng-template pTemplate="icon">
+        <i class="pi pi-upload custom-icon-color"></i>
+      </ng-template>
+    </p-button>
+
+  </div>
+</p-dialog>
+
+<p-dialog header="Capture Image" [(visible)]="cameraVisible" [modal]="true" [style]="{
+  width: '100%',
+  height: 'auto',
+  'border-radius': '15px'
+}" (onHide)="stopCamera()">
+  <div class="container d-flex flex-column align-items-center justify-content-center">
+    <video #videoElement autoplay style="width: 100%; height: 70vh;"></video>
+    <button pButton label="Capture" (click)="captureImage()" class="btn py-2 my-3 rounded-pill" [style]="{
+      'background-color': '#291F6C', 
+      'color': '#fff'
+    }"></button>
+    <canvas #canvasElement style="display: none;"></canvas>
+  </div>
+</p-dialog>
+
+<p-dialog header="Upload Case Image" [(visible)]="fileUploadVisible" [modal]="true" [style]="{ 
+  width: '100%', 
+  maxWidth: '712px', 
+  height: 'auto', 
+  'border-radius': '15px' 
+}">
+
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-12 text-center">
+        <p>Add case image here</p>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-12">
+
+        <div
+          class="d-flex flex-column justify-content-center align-items-center mt-4 file-upload-section costmoized-height-uploading-img"
+          (dragover)="onDragOver($event)" (dragleave)="onDragLeave($event)" (drop)="onDrop($event)">
+          <input type="file" id="fileInput" (change)="onSelectedFiles($event)" multiple accept="image/*"
+            style="display: none;" />
+          <label for="fileInput" class="d-flex flex-column justify-content-center align-items-center cursor-pointer">
+            <i class="pi pi-cloud-upload fs-1 d-flex justify-content-center align-items-center"></i>
+            <p class="mt-4 mb-0">Drag & Drop image here or <span class="custom-icon-colorr">Choose Image</span></p>
+          </label>
+        </div>
+
+        <!-- Pending Files Section -->
+        <div *ngIf="pendingFiles.length > 0" class="w-100 mt-5">
+          <div class="d-flex flex-wrap gap-3">
+            <div *ngFor="let file of pendingFiles; let i = index" class="d-flex p-2"
+              [ngStyle]="{'background-color':'#F9F8F8', 'border-radius':'15px', 'width': '100%', 'position': 'relative'}">
+              <div class="flex-shrink-0">
+                <img [alt]="file.name" [src]="file.objectURL" width="86px" height="68px" class="p-1"
+                  [style]="{'border-radius':'15px'}" />
+              </div>
+
+              <div class="flex-grow-1">
+                <div class="mx-3">
+                  <div class="fw-semibold">{{ file.name }}</div>
+                  <div>{{ formatSize(file.size) }}</div>
+                </div>
+
+                <div class="position-relative mt-2">
+                  <p-progressBar [value]="file.progress" [color]="'#6D5DDC'" [showValue]="false" class="my-2"
+                    [style]="{'height': '7px', 'width': '100%'}"></p-progressBar>
+                  <div class="d-flex justify-content-between align-items-center position-absolute w-100 h-100 px-2"
+                    style="bottom: 0; right: 0px;">
+                    <span style="position: absolute; bottom: 10px; right: 0px;" class="fw-semibold">{{ file.progress
+                      }}%</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="align-self-end mt-2">
+                <p-button icon="pi pi-times" class="p-button-rounded p-button-danger"
+                  [style]="{'color': '#6D5DDC', 'background-color': 'transparent', 'border': 'none'}"
+                  (click)="onRemoveTemplatingFile($event, file, i)">
+                </p-button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Completed Files Section -->
+        <div *ngIf="completedFiles.length > 0" class="w-100 mt-5">
+          <h5>Completed</h5>
+          <div class="d-flex flex-wrap gap-3">
+            <div *ngFor="let file of completedFiles; let i = index"
+              class="p-0 px-3 d-flex align-items-center gap-2 file-item"
+              [style]="{'background-color':'#F9F8F8', 'border-radius':'15px', 'width': '100%', 'height':'80px'}">
+              <div class="d-flex align-items-center gap-2 flex-grow-1">
+                <img [alt]="file.name" [src]="file.objectURL" width="86px" height="68px" class="p-1"
+                  [style]="{'border-radius':'15px'}" />
+                <div>
+                  <span class="fw-semibold">{{ file.name }}</span>
+                  <div>{{ formatSize(file.size) }}</div>
+                </div>
+              </div>
+              <div>
+                <p-button icon="pi pi-trash" class="p-button-rounded p-button-danger"
+                  [style]="{'color': '#6D5DDC', 'background-color': 'transparent', 'border': 'none'}"
+                  (click)="onRemoveCompletedFile(i)">
+                </p-button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="row mt-4">
+      <div class="col-12 d-flex justify-content-center gap-2">
+        <button pButton label="Cancel" class="rounded-pill" [style]="{
+          'border-color': '#291F6C', 
+          'background-color': 'transparent', 
+          'color': '#291F6C', 
+          'padding': '10px 30px',
+          'border': '1px solid #291F6C' 
+        }" (click)="fileUploadVisible = false">
+        </button>
+        <button pButton label="Submit" (click)="submitFiles()" class="rounded-pill"
+          [disabled]="completedFiles.length == 0 || completedFiles.length > 6" [style]="{
+          'background-color': '#291F6C', 
+          'color': '#fff', 
+          'padding': '10px 30px' 
+        }">
+        </button>
+      </div>
+    </div>
+  </div>
+</p-dialog>
+
+<p-toast></p-toast>
+
+
+
+<!-- view History -->
+<div class="overlay-div" *ngIf="isHistoryVisible">
+  <div class="viewHistory bg-white mt-5 rounded-2">
+    <div class="history">
+      <!-- header -->
+      <div class="header">
+        <button (click)="toggleHistory()" class="close-btn">&times;</button>
+      </div>
+      <div *ngIf="!selectedVisit">
+        <div class="firstinside mt-5 position-relative">
+          <div class="mt-4">
+            <h4>Patient Visit Details</h4>
+          </div>
+          <!-- filter buttons -->
+          <div class="filters btn-container">
+            <button type="button" class="btn1Filter" (click)="toggleFilter(); $event.preventDefault();">
+              <i class="pi pi-filter" style="font-size: 12px;"></i> Filter Results
+            </button>
+            <button type="button" (click)="toggleCalendar()" class="btn2Filter">
+              <i class="pi pi-calendar" style="font-size: 12px;"></i> Select Date
+            </button>
+          </div>
+          <div *ngIf="isDetailsVisible" class="filter-container position-absolute underline-filter">
+            <div class="d-flex justify-content-between ">
+              <h5 class="mt-2">Filter</h5>
+              <button type="button" (click)="clickApplyFilterButton()"
+                style="color: black; background-color: white; border-radius: 25px; padding: 0px 35px; font-weight: 600; font-size: 14px; height: 40px;">
+                Select
+              </button>
+            </div>
+            <div class="container pb-3">
+              <div class="row justify-content-center">
+                <div class="visit-type-header">
+                  <h6 style="font-size: 13px;"><b>Visit Type</b></h6>
+
+                </div>
+                <div class="button-container">
+                  <div class="button-item " *ngFor="let part of bodyPartFilter">
+                    <button type="button" class="BodyPart p-2 px-3"
+                      [ngClass]="{ 'selected-body-part': tempSelectedBodyParts.includes(part) }"
+                      (click)="onBodyPartClick(part)">
+                      {{ part }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="custom-calendar-container position-absolute calenderbutton">
+            <p-calendar *ngIf="showCalend" [(ngModel)]="selectedDate" [inline]="true" [showButtonBar]="false"
+              [icon]="showCalend ? 'calendar' : ''" [appendTo]="'body'" [inputId]="'icondisplay'" class="w-100"
+              (onSelect)="onDateChange($event)">
+            </p-calendar>
+          </div>
+        </div>
+
+        <!-- filter view -->
+        <div *ngIf="isFilterSelected" class="filterButtons d-flex flex-column flex-md-row"
+          style="margin-top: 25px; margin-bottom: 30px;">
+          <div class="d-flex justify-content-between flex-column flex-md-row weightcont m-auto">
+            <div class="d-flex flex-wrap">
+              <div *ngFor="let part of selectedBodyParts" class="d-flex align-items-center me-2 mb-2">
+                <span
+                  style="color: #6C63FF; background-color: #EDEBF9; text-decoration: none; font-size: 13px; font-weight: 500; border: none; border-radius: 15px 0 0 15px; margin-right: 1px; padding: 5.5px 7px;">
+                  {{ part }}
+                </span>
+                <button type="button"
+                  style="background-color: #EDEBF9; border-radius: 0px 15px 15px 0px; padding: 3px 5px; border: 0;"
+                  (click)="removeBodyPart(part)">
+                  <i class="pi pi-times" style="font-size: 12px; color: #6C63FF; margin-right: 2px;"></i>
+                </button>
+              </div>
+              <div class="d-flex align-items-center me-2 mb-2" *ngIf="isDateSelected">
+                <span
+                  style="color: #6C63FF; background-color: #EDEBF9; text-decoration: none; font-size: 13px; font-weight: 500; border: none; border-radius: 15px 0 0 15px; margin-right: 1px; padding: 5.5px 7px;">
+                  {{ selectedDateFilterShape }}
+                </span>
+                <button type="button"
+                  style="background-color: #EDEBF9; border-radius: 0px 15px 15px 0px; padding: 3px 5px; border: 0;"
+                  (click)="clearDateFilter()">
+                  <i class="pi pi-times" style="font-size: 12px; color: #6C63FF; margin-right: 2px;"></i>
+                </button>
+              </div>
+              <button *ngIf="clearButton" type="button"
+                style="color: #6C63FF; background-color: white; text-decoration: none; font-size: 13px; font-weight: 500; border: 1px solid #6C63FF;padding: 0px 12px;"
+                class="btn btn-link rounded-5 mb-2" (click)="clearFilters()">
+                Clear All
+              </button>
+            </div>
+            <div class="mt-2 mt-md-0 ms-auto">
+              <button type="button" (click)="CallApiApplyFilters()"
+                style="color: #6C63FF; background-color: white; text-decoration: none; font-size: 13px; font-weight: 500; border: 1px solid #6C63FF;padding: 7px 17px;"
+                class="btn btn-link rounded-5">
+                Apply Filter
+              </button>
+            </div>
+          </div>
+        </div>
+
+
+        <div class="line mt-4"></div>
+
+
+        <!-- List of Patient Visits -->
+
+
+        <div *ngIf="!isLoadingHistory && patientVisits.length === 0" class="text-center w-100 px-3 py-2">
+          No patients found.
+        </div>
+
+
+
+        <div class="row mt-4 eachhistory pb-5 position-relative">
+          <div *ngIf="isLoadingHistory" class="spinner-overlayfilter">
+            <span class="loader"></span>
+          </div>
+          <div *ngFor="let visit of filteredVisits; let i = index" class="content mt-2 position-relative"
+            (click)="selectVisit(visit)">
+            <div class="innerContent pt-4">
+              <div *ngIf="getUploadedFilesForVisit(visit).length > 0"
+                class="image-gallery-container2 position-relative w-100">
+                <img [src]="getUploadedFilesForVisit(visit)[0]?.objectURL" class="preview-image2 w-100 rounded-4"
+                  alt="Uploaded Image">
+                <div class="zoomicon"
+                  (mouseenter)="hoveredVisitIndex = i; showZoomedImage(getUploadedFilesForVisit(visit)[0]?.objectURL, visit, i)"
+                  (mouseleave)="hoveredVisitIndex = null; hideZoomedImage()">
+                  <i [ngClass]="hoveredVisitIndex === i ? 'pi pi-search-minus' : 'pi pi-search-plus'"
+                    class="custom-icon"></i>
+                </div>
+                <div class="thumbnail-container2 position-absolute">
+                  <div class="d-flex justify-content-start position-relative">
+                    <div *ngFor="let file of getUploadedFilesForVisit(visit); let j = index" class="thumbnail-wrapper2">
+                      <img [src]="file.objectURL" class="thumbnail-image rounded-4" alt="Uploaded Thumbnail">
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class=" imageinfo pb-3" style="margin-top: 60px;">
+
+                <h5 style="font-size:16px"><b>Image Information</b></h5>
+                <div class="row mt-3">
+                  <div class="col-md-6">
+                    <p style="font-size: 15px; margin: 0;"><span>Visit Date</span> {{ visit.visitDate | date:
+                      'dd/MM/yyyy' }}</p>
+                  </div>
+                  <div class="col-md-5">
+                    <p style="font-size: 15px;"><span>Anatomy</span> {{ visit.part }}</p>
+                  </div>
+                </div>
+                <div class="d-flex">
+                  <span>DR Note</span>
+                  <p style="font-size: 15px;">{{ visit.drNote | truncateWords:25 }}</p>
+                </div>
+
+              </div>
+            </div>
+            <div *ngIf="isZoomed && zoomedVisit === visit" [ngClass]="{
+            'zoom-overlay-left': isOdd(i), 
+            'zoom-overlay-right': !isOdd(i)
+         }" (mouseleave)="hideZoomedImage()">
+              <img [src]="zoomedImageSrc" class="zoomed-image" alt="Zoomed Image">
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex flex-column align-items-center w-100 px-3">
+          <p-paginator (onPageChange)="onPageChange($event)" [first]="first" [rows]="rows" [totalRecords]="totalRecords"
+            class="w-100"></p-paginator>
+        </div>
+
+      </div>
+      <!-- Selected Visit Details -->
+      <div *ngIf="selectedVisit" class="selected-visit-details mt-4 pb-5">
+        <div class="details mt-5 position-relative d-flex underline">
+          <i style="cursor: pointer; color: #898889;" class="pi pi-chevron-left me-4 mt-2"
+            (click)="clearSelectedVisit()"></i>
+          <h4>Patient Visit Details</h4>
+        </div>
+        <div class="content2 mt-2 position-relative mt-5">
+          <div class="innerContent2 pt-3">
+            <div *ngIf="getUploadedFilesForVisit(selectedVisit).length > 0" class="image-container position-relative">
+              <img [src]="currentImageSrc" class="w-100 rounded-4 detail-image"
+                [ngClass]="{'hover-effect': isIconHovered}" alt="Uploaded Image">
+              <div class="icon-container" (mouseover)="onIconHover()" (mouseout)="onIconLeave()">
+                <i *ngIf="!isIconHovered" class="pi pi-search-plus custom-icon zoomicon2" style="font-size: 20px;"></i>
+                <i *ngIf="isIconHovered" class="pi pi-search-minus custom-icon zoomicon2" style="font-size: 20px;"></i>
+              </div>
+            </div>
+            <div class="d-flex justify-content-start flex-wrap position-relative mt-4">
+              <div *ngFor="let file of getUploadedFilesForVisit(selectedVisit); let i = index" class="details-wrapper"
+                [ngClass]="{'active-thumbnail': currentImageSrc === file.objectURL}"
+                (click)="updateMainImage(file.objectURL)">
+                <img [src]="file.objectURL" class="w-100 h-100 rounded-4 " alt="Uploaded Thumbnail">
+              </div>
+            </div>
+            <div class="mt-5 imageinfoDetails pb-3">
+              <div class="row mt-3">
+                <div class="col-12 col-md-6">
+                  <p class="titles">Anatomy</p>
+                  <p style="font-weight: 600; margin-top: -15px;">{{ selectedVisit.part }}</p>
+                </div>
+                <div class="col-12 col-md-6">
+                  <p class="titles">Visit Date</p>
+                  <p style="font-weight: 600; margin-top: -15px;">{{ formatDate(selectedVisit.visitDate) }}</p>
+                </div>
+              </div>
+              <div>
+                <span class="titles">Doctor's Note</span>
+                <p style="word-break: break-word;">{{ selectedVisit.drNote}}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

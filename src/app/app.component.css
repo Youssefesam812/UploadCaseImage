@@ -1,0 +1,17 @@
+.page-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh; /* Full viewport height */
+  }
+  .main-content {
+    display: flex;
+    flex: 1; /* This makes it take up the remaining space between header and footer */
+  }
+  app-navbar {
+    width: 250px; /* Adjust width as needed */
+    flex-shrink: 0; /* Prevent it from shrinking */
+  }
+  app-home-page {
+    flex: 1; /* Takes up the remaining space */
+    padding: 50px; /* Optional padding */
+  }
