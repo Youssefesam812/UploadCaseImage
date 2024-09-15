@@ -13,7 +13,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:application",
           "options": {
-            "outputPath": "docs",
+            "outputPath": "dist/UploadCaseImage",
             "index": "src/index.html",
             "baseHref": "/UploadCaseImage/",
             "browser": "src/main.ts",
